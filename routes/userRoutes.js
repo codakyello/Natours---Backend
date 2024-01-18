@@ -4,15 +4,18 @@ const {
   getUser,
   updateUser,
   deleteUser,
+  getUsers,
 } = require('../controllers/userController');
 
-const { singup } = require('../controllers/authController');
+const { singup, login } = require('../controllers/authController');
 
 const router = express.Router();
 
 router.post('/signup', singup);
 
-router.route('/').post(createUser);
+router.post('/login', login);
+
+router.route('/').post(createUser).get(getUsers);
 
 router.route('/:id').get(getUser).patch(updateUser).delete(deleteUser);
 

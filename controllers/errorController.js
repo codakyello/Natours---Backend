@@ -17,6 +17,13 @@ const handleValidationError = (err) => {
   const message = `Invalid input data. ${errors.join('. ')}`;
   return new AppError(message, 400);
 };
+
+const handleJWTError = () =>
+  new AppError('Invalid token. Please log in again!', 401);
+
+const handleJWTExpiredError = () =>
+  new AppError('Your token has expired! Please log in again!', 401);
+
 const sendErrorDev = (err, res) => {
   const value = err.message.match(/(["'])(\\?.)*?\1/);
   console.log(value);
@@ -57,10 +64,12 @@ module.exports = (err, req, res, next) => {
     // Default Error
     let error = { ...err };
 
-    // Mongo or db error that we didnt throw manually
+    // handle all errors that we didnt throw ourselves to provide a better error message and a more informed error code.
     if (err.name === 'CastError') error = handleCastErrorDB(err);
     if (err.code === 11000) error = handleDuplicateFieldDB(err);
     if (err.name === 'ValidationError') error = handleValidationError(err);
+    if (err.name === 'JsonWebTokenError') error = handleJWTError(err);
+    if (err.name === 'TokenExpiredError') error = handleJWTExpiredError(err);
     sendErrorProd(error, res);
   }
 };
