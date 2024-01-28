@@ -37,9 +37,22 @@ const userRouter = require('./routes/userRoutes');
 const tourRouter = require('./routes/tourRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
+const { default: rateLimit } = require('express-rate-limit');
+const { default: helmet } = require('helmet');
 
 //1.) Middlewares
-app.use(express.json());
+app.use(helmet());
+
+// Body parser reading data from body into req.body
+app.use(express.json({ limit: '10kb' }));
+
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many requests from this IP, please try again in an hour!',
+});
+
+app.use('/api', limiter);
 
 app.use('/api/v1/users', userRouter);
 

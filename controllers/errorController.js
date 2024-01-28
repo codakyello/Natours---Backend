@@ -41,9 +41,7 @@ const sendErrorProd = (err, res) => {
       message: err.message,
     });
 
-    // Programming or other unknown error:
-    // Error that user dosent need to know
-    // Error from server
+    // Programming or other unknown error.
   } else {
     console.error('ERROR 💥', err);
     res.status(500).json({
@@ -64,7 +62,7 @@ module.exports = (err, req, res, next) => {
     // Default Error
     let error = { ...err };
 
-    // handle all errors that we didnt throw ourselves to provide a better error message and a more informed error code.
+    // handle all errors that we didnt throw ourselves to provide a better error message and a more informed error.
     if (err.name === 'CastError') error = handleCastErrorDB(err);
     if (err.code === 11000) error = handleDuplicateFieldDB(err);
     if (err.name === 'ValidationError') error = handleValidationError(err);
