@@ -25,6 +25,9 @@
 // Express
 const express = require('express');
 const morgan = require('morgan');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
 
 const app = express();
 
@@ -32,19 +35,38 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-const userRouter = require('./routes/userRoutes');
-
-const tourRouter = require('./routes/tourRoutes');
 const AppError = require('./utils/appError');
+const userRouter = require('./routes/userRoutes');
+const tourRouter = require('./routes/tourRoutes');
 const globalErrorHandler = require('./controllers/errorController');
 const { default: rateLimit } = require('express-rate-limit');
 const { default: helmet } = require('helmet');
 
-//1.) Middlewares
+// Middlewares
 app.use(helmet());
 
 // Body parser reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
+
+// Data sanitization against NoSQL injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
+// Prevent parameter pollution
+app.use(
+  hpp({
+    whitelist: [
+      'duration,',
+      'ratingQuantity',
+      'difficulty',
+      'maxGroupSize',
+      'difficulty',
+      'price',
+    ],
+  })
+);
 
 const limiter = rateLimit({
   max: 100,
@@ -52,19 +74,19 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again in an hour!',
 });
 
+// Routes
 app.use('/api', limiter);
-
 app.use('/api/v1/users', userRouter);
-
 app.use('/api/v1/tours', tourRouter);
 
+// Last middleware if no request url is found
 app.use('/', (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+
   // res.status(404).json({
   //   status: 'fail',
   //   message: `Cant't find ${req.originalUrl} on this server`,
   // });
-
-  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
 
 app.use(globalErrorHandler);
